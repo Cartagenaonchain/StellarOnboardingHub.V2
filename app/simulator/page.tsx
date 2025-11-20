@@ -21,6 +21,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 import Link from "next/link";
+import { WalletButton } from "@/components/wallet/WalletButton";
 
 export default function SimulatorPage() {
   const [step, setStep] = useState(1);
@@ -82,6 +83,7 @@ export default function SimulatorPage() {
 
             {/* Desktop: Horizontal badge layout */}
             <div className="hidden sm:flex items-center space-x-4">
+              <WalletButton />
               <Badge className="bg-green-100 text-green-700 border-green-200">
                 <Shield className="w-3 h-3 mr-1" />
                 Safe Mode
@@ -103,19 +105,17 @@ export default function SimulatorPage() {
               {[1, 2, 3, 4].map((stepNum) => (
                 <div key={stepNum} className="flex items-center">
                   <div
-                    className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-semibold text-sm sm:text-base ${
-                      step >= stepNum
-                        ? "bg-[#EECB01] text-[#333333]"
-                        : "bg-gray-200 text-gray-500"
-                    }`}
+                    className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-semibold text-sm sm:text-base ${step >= stepNum
+                      ? "bg-[#EECB01] text-[#333333]"
+                      : "bg-gray-200 text-gray-500"
+                      }`}
                   >
                     {stepNum}
                   </div>
                   {stepNum < 4 && (
                     <div
-                      className={`w-8 sm:w-12 h-1 mx-1 sm:mx-2 ${
-                        step > stepNum ? "bg-[#EECB01]" : "bg-gray-200"
-                      }`}
+                      className={`w-8 sm:w-12 h-1 mx-1 sm:mx-2 ${step > stepNum ? "bg-[#EECB01]" : "bg-gray-200"
+                        }`}
                     />
                   )}
                 </div>
@@ -394,9 +394,9 @@ export default function SimulatorPage() {
                       <div className="text-center mb-4">
                         <div className="flex items-center justify-between mb-1">
                           <div className="text-sm text-gray-600">Transaction Hash</div>
-                          <Button 
-                            size="sm" 
-                            variant="ghost" 
+                          <Button
+                            size="sm"
+                            variant="ghost"
                             className="h-8 w-8 p-0"
                             onClick={() => navigator.clipboard.writeText("a1b2c3d4e5f6789012345678901234567890abcdef1234567890abcdef123456")}
                           >

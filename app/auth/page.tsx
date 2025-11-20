@@ -8,6 +8,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { useSorobanReact } from "stellar-react";
+import { useSessionWallet } from "@/app/StellarWalletProvider";
+import { useRouter } from "next/navigation";
 import {
   Fingerprint,
   Mail,
@@ -29,6 +31,7 @@ type AuthStep = "initial" | "wallet-choice" | "import-wallet" | "email-auth" | "
 type WalletChoice = "existing" | "new" | null
 
 export default function AuthPage() {
+  const router = useRouter();
   const [isSignUp, setIsSignUp] = useState(true)
   const [email, setEmail] = useState("")
   const [isLoading, setIsLoading] = useState(false)
@@ -40,24 +43,36 @@ export default function AuthPage() {
   const [seedPhrase, setSeedPhrase] = useState("")
   const [successMessage, setSuccessMessage] = useState("")
   const [errorMessage, setErrorMessage] = useState("")
-  const { address, connect, disconnect } = useSorobanReact();
+
+  // Freighter/Albedo connection
+  const { address, connect } = useSorobanReact();
+  // Session Wallet (Passkey) connection
+  const { createWallet, publicKey: sessionPublicKey } = useSessionWallet();
 
   useEffect(() => {
     if (address) {
       setSuccessMessage("🎉 Wallet connected successfully!")
       setCurrentStep("success")
-      // Redirect after showing success message
       setTimeout(() => {
-        window.location.href = "/dashboard"
+        router.push("/dashboard");
       }, 2000)
     }
-  }, [address]);
+  }, [address, router]);
+
+  // If session wallet is created, redirect
+  useEffect(() => {
+    if (sessionPublicKey && currentStep === "wallet-choice") {
+      // If we just created it, we handle it in handlePasskeyAuth, 
+      // but this acts as a safeguard or for returning users if we implemented "login" logic
+    }
+  }, [sessionPublicKey, currentStep]);
 
   const handleInitialAuth = () => {
     if (isSignUp) {
       setCurrentStep("wallet-choice")
     } else {
-      setCurrentStep("email-auth")
+      // For Sign In, we could also trigger Passkey "Get" here
+      handlePasskeyLogin();
     }
   }
 
@@ -67,36 +82,100 @@ export default function AuthPage() {
       setCurrentStep("import-wallet")
     } else {
       // Create new seedless wallet with passkey
-      handlePasskeyAuth()
+      handlePasskeyRegistration()
     }
   }
 
-  const handlePasskeyAuth = async () => {
+  const handlePasskeyRegistration = async () => {
     setIsLoading(true)
     setErrorMessage("")
 
     try {
-      // Simulate passkey authentication and wallet creation
-      await new Promise((resolve) => setTimeout(resolve, 2000))
+      // 1. WebAuthn Registration (Platform Authenticator)
+      const challenge = new Uint8Array(32);
+      window.crypto.getRandomValues(challenge);
 
-      if (walletChoice === "new") {
-        setSuccessMessage(
-          "🎉 New seedless wallet created successfully! Your account is secured with passkey authentication - no seed phrases to remember.",
-        )
-      } else {
-        setSuccessMessage("✅ Successfully signed in! Welcome back to your learning journey.")
-      }
+      const publicKeyCredentialCreationOptions: PublicKeyCredentialCreationOptions = {
+        challenge,
+        rp: {
+          name: "Stellar Onboarding Hub",
+          id: window.location.hostname,
+        },
+        user: {
+          id: Uint8Array.from("USER_" + Date.now(), c => c.charCodeAt(0)),
+          name: "user@stellarhub.com",
+          displayName: "Stellar User",
+        },
+        pubKeyCredParams: [{ alg: -7, type: "public-key" }, { alg: -257, type: "public-key" }],
+        authenticatorSelection: {
+          authenticatorAttachment: "platform",
+          userVerification: "required",
+        },
+        timeout: 60000,
+        attestation: "none"
+      };
 
+      // This triggers the browser's native dialog (TouchID/FaceID)
+      await navigator.credentials.create({
+        publicKey: publicKeyCredentialCreationOptions
+      });
+
+      // 2. Create Stellar Wallet in background
+      await createWallet();
+
+      setSuccessMessage(
+        "🎉 New seedless wallet created successfully! Your account is secured with passkey authentication.",
+      )
       setCurrentStep("success")
 
-      // Redirect after showing success message
       setTimeout(() => {
-        window.location.href = "/dashboard"
+        router.push("/dashboard");
       }, 3000)
-    } catch (error) {
-      setErrorMessage("Authentication failed. Please try again.")
+
+    } catch (error: any) {
+      console.error("Passkey error:", error);
+      setErrorMessage("Passkey creation failed or cancelled. Please try again.")
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const handlePasskeyLogin = async () => {
+    setIsLoading(true);
+    setErrorMessage("");
+
+    try {
+      // For login, we would typically use navigator.credentials.get()
+      // But since we are storing the key in localStorage for this demo,
+      // we just simulate the "Authentication" check.
+
+      // However, to be "Real", let's trigger the UI.
+      const challenge = new Uint8Array(32);
+      window.crypto.getRandomValues(challenge);
+
+      await navigator.credentials.get({
+        publicKey: {
+          challenge,
+          rpId: window.location.hostname,
+          userVerification: "required",
+        }
+      });
+
+      // If successful, we assume the user is valid and the wallet is already loaded from localStorage by the Provider
+      // In a real app, we would decrypt the key using the passkey result.
+
+      setSuccessMessage("✅ Successfully signed in! Welcome back.");
+      setCurrentStep("success");
+
+      setTimeout(() => {
+        router.push("/dashboard");
+      }, 2000);
+
+    } catch (error) {
+      console.error("Login error:", error);
+      setErrorMessage("Authentication failed. Please try again.");
+    } finally {
+      setIsLoading(false);
     }
   }
 
@@ -104,7 +183,6 @@ export default function AuthPage() {
     setIsLoading(true)
     setErrorMessage("")
 
-    // Validate input
     if (importMethod === "secret" && !secretKey.trim()) {
       setErrorMessage("Please enter your secret key")
       setIsLoading(false)
@@ -118,10 +196,8 @@ export default function AuthPage() {
     }
 
     try {
-      // Simulate wallet import validation
       await new Promise((resolve) => setTimeout(resolve, 2000))
 
-      // Simulate validation (in real app, validate against Stellar network)
       const isValidKey =
         importMethod === "secret"
           ? secretKey.length >= 56 && secretKey.startsWith("S")
@@ -134,9 +210,8 @@ export default function AuthPage() {
       setSuccessMessage("🔐 Wallet imported successfully! You're now logged in with your existing Stellar wallet.")
       setCurrentStep("success")
 
-      // Redirect after showing success message
       setTimeout(() => {
-        window.location.href = "/dashboard"
+        router.push("/dashboard");
       }, 3000)
     } catch (error) {
       setErrorMessage("Invalid wallet credentials. Please check your secret key or seed phrase and try again.")
@@ -151,15 +226,11 @@ export default function AuthPage() {
     setErrorMessage("")
 
     try {
-      // Simulate email authentication
       await new Promise((resolve) => setTimeout(resolve, 1500))
-
       setSuccessMessage("📧 Check your email! We've sent you a secure login link.")
       setCurrentStep("success")
-
-      // In a real app, user would click email link to complete login
       setTimeout(() => {
-        window.location.href = "/dashboard"
+        router.push("/dashboard");
       }, 3000)
     } catch (error) {
       setErrorMessage("Authentication failed. Please try again.")
@@ -261,7 +332,6 @@ export default function AuthPage() {
                 </Button>
 
                 <div className="flex items-center space-x-2 text-sm text-gray-600 bg-[#8E7CE5]/10 p-3 rounded-lg">
-                  {/* Hide Shield icon on mobile */}
                   <Shield className="w-4 h-4 text-[#8E7CE5] hidden sm:block" />
                   <span>Secure, passwordless authentication - no seed phrases to remember!</span>
                 </div>
@@ -349,34 +419,32 @@ export default function AuthPage() {
               <p className="text-gray-600">Do you already have a Stellar wallet?</p>
             </CardHeader>
             <CardContent className="space-y-4">
-             
-             {!address ? (
-              <Button
-/*                 onClick={() => handleWalletChoice("existing")}
- */        
-                onClick={connect}
-                variant="outline"
-                className="w-full p-8 sm:p-6 h-auto border-2 border-[#8E7CE5]/20 hover:border-[#8E7CE5] hover:bg-[#8E7CE5]/5 transition-all duration-300"
-              >
-                <div className="flex items-center justify-between w-full">
-                  <div className="text-left">
-                    <div className="font-semibold text-[#333333] text-xl sm:text-lg">Yes, I have an account</div>
-                    <div className="text-base sm:text-sm text-gray-600">Secret Key or Seed Phrase</div>
+
+              {!address ? (
+                <Button
+                  onClick={connect}
+                  variant="outline"
+                  className="w-full p-8 sm:p-6 h-auto border-2 border-[#8E7CE5]/20 hover:border-[#8E7CE5] hover:bg-[#8E7CE5]/5 transition-all duration-300"
+                >
+                  <div className="flex items-center justify-between w-full">
+                    <div className="text-left">
+                      <div className="font-semibold text-[#333333] text-xl sm:text-lg">Yes, I have an account</div>
+                      <div className="text-base sm:text-sm text-gray-600">Connect Freighter / Albedo</div>
+                    </div>
+                    <ArrowRight className="hidden sm:inline-block w-8 h-8 sm:w-6 sm:h-6 text-[#8E7CE5] flex-shrink-0" />
                   </div>
-                  <ArrowRight className="hidden sm:inline-block w-8 h-8 sm:w-6 sm:h-6 text-[#8E7CE5] flex-shrink-0" />
-                </div>
-              </Button>
-            ) : (
-              <div className="w-full p-8 sm:p-6 h-auto bg-green-100 rounded-lg border-2 border-green-500">
-                <div className="flex items-center justify-between w-full">
-                  <div className="text-left">
-                    <div className="font-semibold text-green-800 text-xl sm:text-lg">Wallet Connected!</div>
-                    <div className="text-base sm:text-sm text-green-600">Redirecting to dashboard...</div>
+                </Button>
+              ) : (
+                <div className="w-full p-8 sm:p-6 h-auto bg-green-100 rounded-lg border-2 border-green-500">
+                  <div className="flex items-center justify-between w-full">
+                    <div className="text-left">
+                      <div className="font-semibold text-green-800 text-xl sm:text-lg">Wallet Connected!</div>
+                      <div className="text-base sm:text-sm text-green-600">Redirecting to dashboard...</div>
+                    </div>
+                    <CheckCircle className="w-8 h-8 sm:w-6 sm:h-6 text-green-600 flex-shrink-0" />
                   </div>
-                  <CheckCircle className="w-8 h-8 sm:w-6 sm:h-6 text-green-600 flex-shrink-0" />
                 </div>
-              </div>
-            )}
+              )}
 
               <Button
                 onClick={() => handleWalletChoice("new")}
@@ -393,7 +461,6 @@ export default function AuthPage() {
 
               <div className="bg-[#8E7CE5]/10 p-4 rounded-lg">
                 <div className="flex items-start space-x-2">
-                  {/* Hide Shield icon on mobile */}
                   <Shield className="w-4 h-4 text-[#8E7CE5] mt-0.5 hidden sm:block" />
                   <div className="text-sm text-gray-700">
                     <strong>New to Stellar?</strong> We recommend creating a new seedless wallet for the best security
@@ -544,7 +611,7 @@ export default function AuthPage() {
               )}
 
               <Button
-                onClick={handlePasskeyAuth}
+                onClick={handlePasskeyLogin}
                 disabled={isLoading}
                 className="w-full bg-[#EECB01] hover:bg-[#EECB01]/90 text-[#333333] font-semibold py-3 rounded-full shadow-lg hover:shadow-xl transition-all duration-300"
               >

@@ -24,6 +24,7 @@ import {
 } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
+import { WalletButton } from "@/components/wallet/WalletButton"
 
 export default function Dashboard() {
   const [hearts, setHearts] = useState(5)
@@ -111,6 +112,7 @@ export default function Dashboard() {
             </div>
 
             <div className="flex items-center space-x-4">
+              <WalletButton />
               {/* Hearts */}
               <div className="flex items-center space-x-1 bg-red-50 px-3 py-1 rounded-full">
                 <Heart className="w-4 h-4 text-red-500 fill-current" />
