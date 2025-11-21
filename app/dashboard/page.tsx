@@ -25,8 +25,10 @@ import {
 import Image from "next/image"
 import Link from "next/link"
 import { WalletButton } from "@/components/wallet/WalletButton"
+import { useSessionWallet } from "@/app/StellarWalletProvider"
 
 export default function Dashboard() {
+  const { socialMetadata, disconnect } = useSessionWallet();
   const [hearts, setHearts] = useState(5)
   const [streak, setStreak] = useState(7)
   const [xp, setXp] = useState(1250)
@@ -152,26 +154,45 @@ export default function Dashboard() {
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-8">
             {/* Welcome Section */}
-            <div className="bg-gradient-to-r from-[#EECB01] to-[#8E7CE5] rounded-2xl p-6 text-white">
-              <h2 className="text-2xl font-bold mb-2 font-sans">Welcome back, Stellar Explorer! 🚀</h2>
-              <p className="text-white/90 mb-4">
-                You're on a {streak}-day streak! Keep it up to unlock special rewards.
-              </p>
-              <div className="flex items-center space-x-4">
-                <div className="bg-white/20 rounded-lg px-4 py-2">
-                  <div className="text-sm text-white/80">Level</div>
-                  <div className="text-xl font-bold">{level}</div>
+            <Card className="bg-muted/40 border-none">
+              <CardContent className="p-6">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h2 className="text-2xl font-bold mb-2 font-sans text-[#333333]">
+                      Welcome back, {socialMetadata?.name || "Stellar Explorer"}! 🚀
+                    </h2>
+                    <p className="text-gray-600 mb-6">
+                      You're on a {streak}-day streak! Keep it up to unlock special rewards.
+                    </p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    className="text-red-500 border-red-200 hover:bg-red-50"
+                    onClick={() => {
+                      disconnect();
+                      window.location.href = "/auth";
+                    }}
+                  >
+                    Log Out
+                  </Button>
                 </div>
-                <div className="bg-white/20 rounded-lg px-4 py-2">
-                  <div className="text-sm text-white/80">Total XP</div>
-                  <div className="text-xl font-bold">{xp.toLocaleString()}</div>
+
+                <div className="flex items-center space-x-4">
+                  <div className="bg-white rounded-lg px-4 py-2 border border-gray-100 shadow-sm">
+                    <div className="text-sm text-gray-500">Level</div>
+                    <div className="text-xl font-bold text-[#333333]">{level}</div>
+                  </div>
+                  <div className="bg-white rounded-lg px-4 py-2 border border-gray-100 shadow-sm">
+                    <div className="text-sm text-gray-500">Total XP</div>
+                    <div className="text-xl font-bold text-[#333333]">{xp.toLocaleString()}</div>
+                  </div>
+                  <div className="bg-white rounded-lg px-4 py-2 border border-gray-100 shadow-sm">
+                    <div className="text-sm text-gray-500">Rank</div>
+                    <div className="text-xl font-bold text-[#333333]">#42</div>
+                  </div>
                 </div>
-                <div className="bg-white/20 rounded-lg px-4 py-2">
-                  <div className="text-sm text-white/80">Rank</div>
-                  <div className="text-xl font-bold">#42</div>
-                </div>
-              </div>
-            </div>
+              </CardContent>
+            </Card>
 
             {/* Learning Paths */}
             <div>

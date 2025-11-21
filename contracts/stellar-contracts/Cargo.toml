@@ -6,7 +6,7 @@ members = [
     "packages/access/*",
     "packages/contract-utils/*",
     "packages/test-utils/*",
-    "packages/tokens/*",
+    "packages/tokens/*", "Auth", "contract/Auth",
 ]
 exclude = ["examples/upgradeable/testdata"]
 

@@ -1,7 +1,9 @@
 "use client"
 
 import type React from "react"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
+import { StellarSocialSDK } from "stellar-social-sdk"
+
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -23,12 +25,21 @@ import {
   Eye,
   EyeOff,
   ArrowRight,
+  Loader2,
 } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 
 type AuthStep = "initial" | "wallet-choice" | "import-wallet" | "email-auth" | "success"
 type WalletChoice = "existing" | "new" | null
+
+const CONTRACT_ID = 'CALZGCSB3P3WEBLW3QTF5Y4WEALEVTYUYBC7KBGQ266GDINT7U4E74KW';
+const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+
+interface CredentialResponse {
+  credential: string;
+}
+
 
 export default function AuthPage() {
   const router = useRouter();
@@ -44,10 +55,19 @@ export default function AuthPage() {
   const [successMessage, setSuccessMessage] = useState("")
   const [errorMessage, setErrorMessage] = useState("")
 
+  // Google Login State
+  const [sdk, setSdk] = useState<StellarSocialSDK | null>(null);
+  const sdkRef = useRef<StellarSocialSDK | null>(null);
+
+  useEffect(() => {
+    sdkRef.current = sdk;
+  }, [sdk]);
+
+
   // Freighter/Albedo connection
   const { address, connect } = useSorobanReact();
   // Session Wallet (Passkey) connection
-  const { createWallet, publicKey: sessionPublicKey } = useSessionWallet();
+  const { createWallet, publicKey: sessionPublicKey, setSocialWallet } = useSessionWallet();
 
   useEffect(() => {
     if (address) {
@@ -58,6 +78,140 @@ export default function AuthPage() {
       }, 2000)
     }
   }, [address, router]);
+
+  // Initialize SDK
+  useEffect(() => {
+    const initSDK = async () => {
+      if (!GOOGLE_CLIENT_ID) {
+        console.warn('Google Client ID not configured');
+        return;
+      }
+
+      const stellarSDK = new StellarSocialSDK({
+        contractId: CONTRACT_ID,
+        network: 'testnet',
+        googleClientId: GOOGLE_CLIENT_ID
+      });
+
+      setSdk(stellarSDK);
+    };
+
+    initSDK();
+  }, []);
+
+  // Handle Google Auth
+  const handleGoogleAuthComplete = useCallback(async (credentialResponse: CredentialResponse) => {
+    try {
+      if (!credentialResponse?.credential) {
+        throw new Error('No credential received from Google');
+      }
+
+      setIsLoading(true);
+      setErrorMessage("");
+
+      const currentSdk = sdkRef.current;
+      if (!currentSdk) {
+        throw new Error('SDK not initialized');
+      }
+
+      const result = await currentSdk.authenticateWithGoogleCredential(credentialResponse);
+
+      if (result.success && result.account) {
+        const authMethod = result.account.data.authMethods[0];
+        const userName = authMethod.metadata?.name || 'User';
+        const userEmail = authMethod.metadata?.email || '';
+        const userAvatar = authMethod.metadata?.picture || '';
+
+        // Get balance
+        let balance = "0";
+        try {
+          const balances = await result.account.getBalance();
+          const native = balances.find((b: any) => b.asset === "native" || b.asset === "XLM");
+          if (native) balance = native.balance;
+        } catch (e) {
+          console.error("Error getting initial balance:", e);
+        }
+
+        // Save to context
+        const accountAddress = result.account.address || result.account.publicKey;
+        console.log("Social Auth Result:", { address: accountAddress, account: result.account });
+
+        if (accountAddress) {
+          setSocialWallet(accountAddress, {
+            name: userName,
+            email: userEmail,
+            avatar: userAvatar
+          }, balance);
+        } else {
+          console.error("No address found in social account object");
+          setErrorMessage("Could not retrieve wallet address");
+          return;
+        }
+
+        setSuccessMessage(`🎉 Welcome ${userName}! Your Stellar account is ready.`);
+        setCurrentStep("success");
+
+        // Here we might want to persist the session or pass it to the global context
+        // For now, we just redirect as per the flow
+        setTimeout(() => {
+          router.push("/dashboard");
+        }, 2000);
+      } else {
+        throw new Error(result.error || 'Authentication failed');
+      }
+
+    } catch (error: any) {
+      console.error("Google Auth error:", error);
+      setErrorMessage(error.message || "Google authentication failed");
+    } finally {
+      setIsLoading(false);
+    }
+  }, [router]);
+
+  // Initialize Google OAuth
+  useEffect(() => {
+    if (!sdk) return;
+
+    const setupGoogleOAuth = () => {
+      if (typeof window !== 'undefined' && (window as any).google?.accounts?.id) {
+        try {
+          (window as any).handleGoogleCredential = handleGoogleAuthComplete;
+
+          (window as any).google.accounts.id.initialize({
+            client_id: GOOGLE_CLIENT_ID!,
+            callback: handleGoogleAuthComplete,
+            auto_select: false,
+            cancel_on_tap_outside: false,
+            ux_mode: 'popup',
+            context: 'signin',
+            itp_support: true,
+            use_fedcm_for_prompt: true
+          });
+
+          // Render the button
+          const buttonContainer = document.getElementById('google-signin-button');
+          if (buttonContainer) {
+            (window as any).google.accounts.id.renderButton(buttonContainer, {
+              type: 'standard',
+              shape: 'pill',
+              theme: 'outline',
+              text: 'signin_with',
+              size: 'large',
+              width: '100%',
+              logo_alignment: 'left'
+            });
+          }
+        } catch (error) {
+          console.error('Error initializing Google OAuth:', error);
+        }
+      } else {
+        setTimeout(setupGoogleOAuth, 500);
+      }
+    };
+
+    setTimeout(setupGoogleOAuth, 1000);
+  }, [sdk, handleGoogleAuthComplete]);
+
 
   // If session wallet is created, redirect
   useEffect(() => {
@@ -337,6 +491,17 @@ export default function AuthPage() {
                 </div>
               </div>
 
+              {/* Google Login */}
+              <div className="space-y-4">
+                <div id="google-signin-button" className="w-full min-h-[40px] flex justify-center"></div>
+                {!GOOGLE_CLIENT_ID && (
+                  <p className="text-xs text-red-500 text-center">
+                    Missing NEXT_PUBLIC_GOOGLE_CLIENT_ID in .env.local
+                  </p>
+                )}
+              </div>
+
+
               <div className="relative">
                 <div className="absolute inset-0 flex items-center">
                   <div className="w-full border-t border-gray-300" />
@@ -448,15 +613,23 @@ export default function AuthPage() {
 
               <Button
                 onClick={() => handleWalletChoice("new")}
+                disabled={isLoading}
                 className="w-full p-8 sm:p-6 h-auto bg-[#EECB01] hover:bg-[#EECB01]/90 text-[#333333] transition-all duration-300"
               >
-                <div className="flex items-center justify-between w-full">
-                  <div className="text-left">
-                    <div className="font-semibold text-xl sm:text-lg">No, create a new account</div>
-                    <div className="text-base sm:text-sm opacity-80">Account with passkey</div>
+                {isLoading ? (
+                  <div className="flex items-center justify-center w-full">
+                    <Loader2 className="w-6 h-6 animate-spin mr-2" />
+                    <div className="text-lg font-semibold">Creating your account...</div>
                   </div>
-                  <ArrowRight className="hidden sm:inline-block w-8 h-8 sm:w-6 sm:h-6 text-[#8E7CE5] flex-shrink-0" />
-                </div>
+                ) : (
+                  <div className="flex items-center justify-between w-full">
+                    <div className="text-left">
+                      <div className="font-semibold text-xl sm:text-lg">No, create a new account</div>
+                      <div className="text-base sm:text-sm opacity-80">Account with passkey</div>
+                    </div>
+                    <ArrowRight className="hidden sm:inline-block w-8 h-8 sm:w-6 sm:h-6 text-[#8E7CE5] flex-shrink-0" />
+                  </div>
+                )}
               </Button>
 
               <div className="bg-[#8E7CE5]/10 p-4 rounded-lg">

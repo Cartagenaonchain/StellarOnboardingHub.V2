@@ -67,6 +67,7 @@
   * {
     @apply border-border;
   }
+
   body {
     @apply bg-background text-foreground;
   }
@@ -78,12 +79,15 @@
     transform: scale(0.3);
     opacity: 0;
   }
+
   50% {
     transform: scale(1.05);
   }
+
   70% {
     transform: scale(0.9);
   }
+
   100% {
     transform: scale(1);
     opacity: 1;
@@ -91,10 +95,12 @@
 }
 
 @keyframes pulse-glow {
+
   0%,
   100% {
     box-shadow: 0 0 5px rgba(238, 203, 1, 0.5);
   }
+
   50% {
     box-shadow: 0 0 20px rgba(238, 203, 1, 0.8);
   }
@@ -112,8 +118,7 @@
   /* Crayon-style elements */
   .crayon-border {
     border: 3px solid;
-    border-image: url("data:image/svg+xml,%3csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='m0,0 l100,0 l100,100 l0,100 z' stroke='%23EECB01' stroke-width='3' fill='none' stroke-dasharray='5,5'/%3e%3c/svg%3e")
-      3;
+    border-image: url("data:image/svg+xml,%3csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='m0,0 l100,0 l100,100 l0,100 z' stroke='%23EECB01' stroke-width='3' fill='none' stroke-dasharray='5,5'/%3e%3c/svg%3e") 3;
   }
 }
 
@@ -134,6 +139,7 @@
 
 /* Accessibility improvements */
 @media (prefers-reduced-motion: reduce) {
+
   .animate-bounce-in,
   .animate-pulse-glow {
     animation: none;

@@ -12,8 +12,11 @@ interface SessionWalletContextType {
     createWallet: () => Promise<void>;
     loadWallet: () => void;
     fundWallet: () => Promise<void>;
+    setSocialWallet: (address: string, metadata: any, initialBalance?: string) => void;
+    disconnect: () => void;
     isLoading: boolean;
-    walletType: "freighter" | "local" | null;
+    walletType: "freighter" | "local" | "social" | null;
+    socialMetadata: any | null;
 }
 
 const SessionWalletContext = createContext<SessionWalletContextType>({
@@ -23,8 +26,11 @@ const SessionWalletContext = createContext<SessionWalletContextType>({
     createWallet: async () => { },
     loadWallet: () => { },
     fundWallet: async () => { },
+    setSocialWallet: () => { },
+    disconnect: () => { },
     isLoading: false,
     walletType: null,
+    socialMetadata: null,
 });
 
 export const useSessionWallet = () => useContext(SessionWalletContext);
@@ -34,6 +40,8 @@ const UnifiedWalletProvider = ({ children }: { children: ReactNode }) => {
     const sorobanContext = useSorobanReact();
     const [secretKey, setSecretKey] = useState<string | null>(null);
     const [localPublicKey, setLocalPublicKey] = useState<string | null>(null);
+    const [socialAddress, setSocialAddress] = useState<string | null>(null);
+    const [socialMetadata, setSocialMetadata] = useState<any | null>(null);
     const [balance, setBalance] = useState<string>("0");
     const [isLoading, setIsLoading] = useState(false);
 
@@ -46,12 +54,14 @@ const UnifiedWalletProvider = ({ children }: { children: ReactNode }) => {
     const server = new Horizon.Server(testnetNetworkDetails.horizonRpcUrl);
 
     // Determinar cuál es la "Active Wallet"
-    // Prioridad: Freighter > Local
-    const activePublicKey = sorobanContext.address || localPublicKey;
-    const walletType = sorobanContext.address ? "freighter" : (localPublicKey ? "local" : null);
+    // Prioridad: Freighter > Social > Local
+    const activePublicKey = sorobanContext.address || socialAddress || localPublicKey;
+    const walletType = sorobanContext.address ? "freighter" : (socialAddress ? "social" : (localPublicKey ? "local" : null));
 
     const loadWallet = () => {
         if (typeof window === 'undefined') return;
+
+        // Load Local Wallet
         const storedKey = localStorage.getItem("stellar_secret_key");
         if (storedKey) {
             setSecretKey(storedKey);
@@ -63,6 +73,62 @@ const UnifiedWalletProvider = ({ children }: { children: ReactNode }) => {
                 localStorage.removeItem("stellar_secret_key");
             }
         }
+
+        // Load Social Wallet
+        const storedSocialAddress = localStorage.getItem("stellar_social_address");
+        const storedSocialMetadata = localStorage.getItem("stellar_social_metadata");
+        const storedSocialBalance = localStorage.getItem("stellar_social_balance");
+
+        if (storedSocialAddress) {
+            setSocialAddress(storedSocialAddress);
+            if (storedSocialBalance) {
+                setBalance(storedSocialBalance);
+            }
+            if (storedSocialMetadata) {
+                try {
+                    setSocialMetadata(JSON.parse(storedSocialMetadata));
+                } catch (e) {
+                    console.error("Invalid stored metadata", e);
+                }
+            }
+        }
+    };
+
+    const setSocialWallet = (address: string, metadata: any, initialBalance: string = "0") => {
+        if (!address) {
+            console.error("setSocialWallet called with empty address");
+            return;
+        }
+        setSocialAddress(address);
+        setSocialMetadata(metadata);
+        setBalance(initialBalance);
+
+        localStorage.setItem("stellar_social_address", address);
+        localStorage.setItem("stellar_social_metadata", JSON.stringify(metadata));
+        localStorage.setItem("stellar_social_balance", initialBalance);
+
+        // Only fetch if it looks like a G address, otherwise we rely on the passed balance or SDK (if we had it)
+        if (address.startsWith('G')) {
+            fetchBalance(address);
+        }
+    };
+
+    const disconnect = () => {
+        setSecretKey(null);
+        setLocalPublicKey(null);
+        setSocialAddress(null);
+        setSocialMetadata(null);
+        setBalance("0");
+
+        localStorage.removeItem("stellar_secret_key");
+        localStorage.removeItem("stellar_social_address");
+        localStorage.removeItem("stellar_social_metadata");
+        localStorage.removeItem("stellar_social_balance");
+
+        // Also disconnect Freighter if possible
+        // if (sorobanContext.disconnect) {
+        //      sorobanContext.disconnect();
+        // }
     };
 
     const createWallet = async () => {
@@ -110,6 +176,14 @@ const UnifiedWalletProvider = ({ children }: { children: ReactNode }) => {
     };
 
     const fetchBalance = async (pubKey: string) => {
+        if (!pubKey) return;
+
+        // Horizon loadAccount only works for G addresses (Classic Accounts)
+        if (!pubKey.startsWith('G')) {
+            console.log("Skipping Horizon fetch for non-standard address:", pubKey);
+            return;
+        }
+
         try {
             const account = await server.loadAccount(pubKey);
             const xlmBalance = account.balances.find((b: any) => b.asset_type === "native");
@@ -118,7 +192,8 @@ const UnifiedWalletProvider = ({ children }: { children: ReactNode }) => {
             }
         } catch (error) {
             console.error("Error fetching balance:", error);
-            setBalance("0");
+            // Don't reset balance to 0 here if we have a stored one, 
+            // but for now we just log.
         }
     };
 
@@ -146,8 +221,11 @@ const UnifiedWalletProvider = ({ children }: { children: ReactNode }) => {
             createWallet,
             loadWallet,
             fundWallet,
+            setSocialWallet,
+            disconnect,
             isLoading,
-            walletType: walletType as "freighter" | "local" | null
+            walletType: walletType as "freighter" | "local" | "social" | null,
+            socialMetadata
         }}>
             {children}
         </SessionWalletContext.Provider>

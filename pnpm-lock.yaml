@@ -149,6 +149,9 @@ importers:
       stellar-react:
         specifier: ^0.0.5
         version: 0.0.5(@stellar/stellar-base@13.1.0)(@trezor/connect@9.5.1(bufferutil@4.0.9)(fastestsmallesttextencoderdecoder@1.0.22)(tslib@2.8.1)(typescript@5.8.3)(utf-8-validate@5.0.10)(ws@7.5.10(bufferutil@4.0.9)(utf-8-validate@5.0.10)))(bufferutil@4.0.9)(fastestsmallesttextencoderdecoder@1.0.22)(near-api-js@5.1.1)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)(tslib@2.8.1)(typescript@5.8.3)(utf-8-validate@5.0.10)(ws@7.5.10(bufferutil@4.0.9)(utf-8-validate@5.0.10))
+      stellar-social-sdk:
+        specifier: link:stellar-social-sdk
+        version: link:stellar-social-sdk
       tailwind-merge:
         specifier: ^2.5.5
         version: 2.6.0
