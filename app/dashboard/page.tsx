@@ -36,12 +36,24 @@ import { LogOut, Settings } from "lucide-react"
 import { WalletButton } from "@/components/wallet/WalletButton"
 import { useSessionWallet } from "@/app/StellarWalletProvider"
 
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+} from "@/components/ui/dialog"
+import { Plus } from "lucide-react"
+
 export default function Dashboard() {
   const { socialMetadata, disconnect } = useSessionWallet();
   const [hearts, setHearts] = useState(5)
   const [streak, setStreak] = useState(7)
   const [xp, setXp] = useState(1250)
   const [level, setLevel] = useState(3)
+  const [isBuyLivesOpen, setIsBuyLivesOpen] = useState(false)
 
   const learningPaths = [
     {
@@ -124,11 +136,60 @@ export default function Dashboard() {
 
             <div className="flex items-center space-x-4">
               <WalletButton />
-              {/* Hearts */}
-              <div className="flex items-center space-x-1 bg-red-50 px-3 py-1 rounded-full">
-                <Heart className="w-4 h-4 text-red-500 fill-current" />
-                <span className="text-sm font-semibold text-red-600">{hearts}</span>
-              </div>
+
+              {/* Hearts & Buy Lives */}
+              <Dialog open={isBuyLivesOpen} onOpenChange={setIsBuyLivesOpen}>
+                <DialogTrigger asChild>
+                  <div className="flex items-center space-x-1 bg-red-50 px-3 py-1 rounded-full cursor-pointer hover:bg-red-100 transition-colors">
+                    <Heart className="w-4 h-4 text-red-500 fill-current" />
+                    <span className="text-sm font-semibold text-red-600">{hearts}</span>
+                    <div className="w-4 h-4 bg-red-200 rounded-full flex items-center justify-center ml-1">
+                      <Plus className="w-3 h-3 text-red-600" />
+                    </div>
+                  </div>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[425px]">
+                  <DialogHeader>
+                    <DialogTitle className="flex items-center text-2xl">
+                      <Heart className="w-6 h-6 text-red-500 fill-current mr-2" />
+                      Refill Lives
+                    </DialogTitle>
+                    <DialogDescription>
+                      Running low on lives? Use your XLM to buy more and keep your streak alive!
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="grid gap-4 py-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <Card className="cursor-pointer hover:border-red-500 transition-all border-2" onClick={() => {
+                        setHearts(hearts + 1);
+                        setIsBuyLivesOpen(false);
+                      }}>
+                        <CardContent className="flex flex-col items-center justify-center p-4">
+                          <Heart className="w-8 h-8 text-red-500 mb-2" />
+                          <div className="font-bold text-lg">+1 Life</div>
+                          <div className="text-sm text-gray-500">5 XLM</div>
+                        </CardContent>
+                      </Card>
+                      <Card className="cursor-pointer hover:border-red-500 transition-all border-2" onClick={() => {
+                        setHearts(5);
+                        setIsBuyLivesOpen(false);
+                      }}>
+                        <CardContent className="flex flex-col items-center justify-center p-4">
+                          <div className="relative">
+                            <Heart className="w-8 h-8 text-red-500 mb-2" />
+                            <Heart className="w-8 h-8 text-red-500 absolute top-0 left-1 opacity-50" />
+                          </div>
+                          <div className="font-bold text-lg">Full Refill</div>
+                          <div className="text-sm text-gray-500">20 XLM</div>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setIsBuyLivesOpen(false)}>Cancel</Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
 
               {/* Streak */}
               <div className="flex items-center space-x-1 bg-orange-50 px-3 py-1 rounded-full">
@@ -176,7 +237,8 @@ export default function Dashboard() {
                     className="text-red-600 cursor-pointer flex items-center"
                     onClick={() => {
                       disconnect();
-                      window.location.href = "/auth";
+                      // Force a hard redirect to clear history state if possible, or just replace
+                      window.location.replace("/auth");
                     }}
                   >
                     <LogOut className="w-4 h-4 mr-2" />
