@@ -21,6 +21,7 @@ import {
   Target,
   TrendingUp,
   User,
+  Bot,
 } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
@@ -382,6 +383,16 @@ export default function Dashboard() {
                       <Trophy className="w-8 h-8 text-orange-600 mx-auto mb-3" />
                       <h4 className="font-semibold text-[#333333] mb-2">Daily Challenge</h4>
                       <p className="text-sm text-gray-600">Earn bonus XP</p>
+                    </CardContent>
+                  </Card>
+                </Link>
+
+                <Link href="/trading-advisor">
+                  <Card className="border-2 border-blue-400/20 hover:border-blue-400 transition-all duration-300 hover:shadow-lg cursor-pointer">
+                    <CardContent className="p-6 text-center">
+                      <Bot className="w-8 h-8 text-blue-600 mx-auto mb-3" />
+                      <h4 className="font-semibold text-[#333333] mb-2">AI Advisor</h4>
+                      <p className="text-sm text-gray-600">Learn Technical Analysis</p>
                     </CardContent>
                   </Card>
                 </Link>
