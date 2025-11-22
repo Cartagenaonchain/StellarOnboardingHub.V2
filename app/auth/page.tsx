@@ -487,19 +487,7 @@ export default function AuthPage() {
 
               {/* Passkey Authentication */}
               <div className="space-y-4">
-                <Button
-                  onClick={handleInitialAuth}
-                  disabled={isLoading}
-                  className="w-full bg-[#EECB01] hover:bg-[#EECB01]/90 text-[#333333] font-semibold py-3 rounded-full shadow-lg hover:shadow-xl transition-all duration-300"
-                >
-                  <Fingerprint className="w-5 h-5 mr-2" />
-                  {isLoading ? "Processing..." : `${isSignUp ? "Sign Up" : "Sign In"} with Passkey`}
-                </Button>
 
-                <div className="flex items-center space-x-2 text-sm text-gray-600 bg-[#8E7CE5]/10 p-3 rounded-lg">
-                  <Shield className="w-4 h-4 text-[#8E7CE5] hidden sm:block" />
-                  <span>Secure, passwordless authentication - no seed phrases to remember!</span>
-                </div>
               </div>
 
               {/* Google Login */}
