@@ -25,6 +25,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
+      <head>
+        <meta charSet="utf-8" />
+      </head>
       <body className={`${inter.variable} font-sans`}>
         <StellarWalletProvider>{children}</StellarWalletProvider>
         <Script src="https://accounts.google.com/gsi/client" strategy="afterInteractive" />

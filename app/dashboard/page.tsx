@@ -24,6 +24,15 @@ import {
 } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { LogOut, Settings } from "lucide-react"
 import { WalletButton } from "@/components/wallet/WalletButton"
 import { useSessionWallet } from "@/app/StellarWalletProvider"
 
@@ -133,17 +142,48 @@ export default function Dashboard() {
                 <span className="text-sm font-semibold text-[#333333]">{xp} XP</span>
               </div>
 
-              {/* Profile Link */}
-              <Link href="/profile">
-                {/* Mobile: Show only icon */}
-                <Button variant="ghost" size="sm" className="text-[#8E7CE5] sm:hidden">
-                  <User className="w-4 h-4" />
-                </Button>
-                {/* Desktop: Show text */}
-                <Button variant="ghost" size="sm" className="text-[#8E7CE5] hidden sm:inline-flex">
-                  Profile
-                </Button>
-              </Link>
+              {/* Profile Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="text-[#8E7CE5] flex items-center space-x-2">
+                    {socialMetadata?.avatar ? (
+                      <img src={socialMetadata.avatar} alt="Profile" className="w-6 h-6 rounded-full" />
+                    ) : (
+                      <User className="w-4 h-4" />
+                    )}
+                    <span className="hidden sm:inline-flex">
+                      {socialMetadata?.name?.split(' ')[0] || "Profile"}
+                    </span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link href="/profile" className="cursor-pointer flex items-center">
+                      <User className="w-4 h-4 mr-2" />
+                      My Profile
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/settings" className="cursor-pointer flex items-center">
+                      <Settings className="w-4 h-4 mr-2" />
+                      Settings
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    className="text-red-600 cursor-pointer flex items-center"
+                    onClick={() => {
+                      disconnect();
+                      window.location.href = "/auth";
+                    }}
+                  >
+                    <LogOut className="w-4 h-4 mr-2" />
+                    Log Out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
         </div>
@@ -165,16 +205,6 @@ export default function Dashboard() {
                       You're on a {streak}-day streak! Keep it up to unlock special rewards.
                     </p>
                   </div>
-                  <Button
-                    variant="outline"
-                    className="text-red-500 border-red-200 hover:bg-red-50"
-                    onClick={() => {
-                      disconnect();
-                      window.location.href = "/auth";
-                    }}
-                  >
-                    Log Out
-                  </Button>
                 </div>
 
                 <div className="flex items-center space-x-4">

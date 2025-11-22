@@ -118,7 +118,18 @@ export default function AuthPage() {
 
       if (result.success && result.account) {
         const authMethod = result.account.data.authMethods[0];
-        const userName = authMethod.metadata?.name || 'User';
+
+        // Helper to fix encoding issues (Latin-1 to UTF-8 re-interpretation)
+        const fixEncoding = (str: string) => {
+          try {
+            return decodeURIComponent(escape(str));
+          } catch (e) {
+            return str;
+          }
+        };
+
+        const rawName = authMethod.metadata?.name || 'User';
+        const userName = fixEncoding(rawName);
         const userEmail = authMethod.metadata?.email || '';
         const userAvatar = authMethod.metadata?.picture || '';
 
