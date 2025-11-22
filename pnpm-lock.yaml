@@ -143,12 +143,18 @@ importers:
       recharts:
         specifier: 2.15.0
         version: 2.15.0(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+      slim-select:
+        specifier: ^3.2.0
+        version: 3.2.0(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       sonner:
         specifier: ^1.7.1
         version: 1.7.4(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       stellar-react:
         specifier: ^0.0.5
         version: 0.0.5(@stellar/stellar-base@13.1.0)(@trezor/connect@9.5.1(bufferutil@4.0.9)(fastestsmallesttextencoderdecoder@1.0.22)(tslib@2.8.1)(typescript@5.8.3)(utf-8-validate@5.0.10)(ws@7.5.10(bufferutil@4.0.9)(utf-8-validate@5.0.10)))(bufferutil@4.0.9)(fastestsmallesttextencoderdecoder@1.0.22)(near-api-js@5.1.1)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)(tslib@2.8.1)(typescript@5.8.3)(utf-8-validate@5.0.10)(ws@7.5.10(bufferutil@4.0.9)(utf-8-validate@5.0.10))
+      stellar-social-sdk:
+        specifier: link:stellar-social-sdk
+        version: link:stellar-social-sdk
       tailwind-merge:
         specifier: ^2.5.5
         version: 2.6.0
@@ -3367,6 +3373,20 @@ packages:
 
   simple-swizzle@0.2.2:
     resolution: {integrity: sha512-JA//kQgZtbuY83m+xT+tXJkmJncGMTFT+C+g2h2R9uxkYIrE2yy9sgmcLhCnw57/WSD+Eh3J97FPEDFnbXnDUg==}
+
+  slim-select@3.2.0:
+    resolution: {integrity: sha512-kC3IC/3zxO5T7qJ+ibXBzLZ3T5I94Vu1LIAFk9Onr3oE8Dndw5p3mTFxiUje15Om9SuvLDIch1751bCLuBlRXw==}
+    peerDependencies:
+      react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
+      react-dom: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
+      vue: ^3.0.0
+    peerDependenciesMeta:
+      react:
+        optional: true
+      react-dom:
+        optional: true
+      vue:
+        optional: true
 
   smart-buffer@4.2.0:
     resolution: {integrity: sha512-94hK0Hh8rPqQl2xXc3HsaBoOXKV20MToPkcXvwbISWLEs+64sBq5kFgn2kJDHb1Pry9yrP0dxrCI9RRci7RXKg==}
@@ -7711,6 +7731,11 @@ snapshots:
     dependencies:
       is-arrayish: 0.3.2
     optional: true
+
+  slim-select@3.2.0(react-dom@19.1.0(react@19.1.0))(react@19.1.0):
+    optionalDependencies:
+      react: 19.1.0
+      react-dom: 19.1.0(react@19.1.0)
 
   smart-buffer@4.2.0: {}
 

@@ -24,9 +24,20 @@ import {
 } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { LogOut, Settings } from "lucide-react"
 import { WalletButton } from "@/components/wallet/WalletButton"
+import { useSessionWallet } from "@/app/StellarWalletProvider"
 
 export default function Dashboard() {
+  const { socialMetadata, disconnect } = useSessionWallet();
   const [hearts, setHearts] = useState(5)
   const [streak, setStreak] = useState(7)
   const [xp, setXp] = useState(1250)
@@ -131,17 +142,48 @@ export default function Dashboard() {
                 <span className="text-sm font-semibold text-[#333333]">{xp} XP</span>
               </div>
 
-              {/* Profile Link */}
-              <Link href="/profile">
-                {/* Mobile: Show only icon */}
-                <Button variant="ghost" size="sm" className="text-[#8E7CE5] sm:hidden">
-                  <User className="w-4 h-4" />
-                </Button>
-                {/* Desktop: Show text */}
-                <Button variant="ghost" size="sm" className="text-[#8E7CE5] hidden sm:inline-flex">
-                  Profile
-                </Button>
-              </Link>
+              {/* Profile Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="text-[#8E7CE5] flex items-center space-x-2">
+                    {socialMetadata?.avatar ? (
+                      <img src={socialMetadata.avatar} alt="Profile" className="w-6 h-6 rounded-full" />
+                    ) : (
+                      <User className="w-4 h-4" />
+                    )}
+                    <span className="hidden sm:inline-flex">
+                      {socialMetadata?.name?.split(' ')[0] || "Profile"}
+                    </span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link href="/profile" className="cursor-pointer flex items-center">
+                      <User className="w-4 h-4 mr-2" />
+                      My Profile
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/settings" className="cursor-pointer flex items-center">
+                      <Settings className="w-4 h-4 mr-2" />
+                      Settings
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    className="text-red-600 cursor-pointer flex items-center"
+                    onClick={() => {
+                      disconnect();
+                      window.location.href = "/auth";
+                    }}
+                  >
+                    <LogOut className="w-4 h-4 mr-2" />
+                    Log Out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
         </div>
@@ -152,26 +194,35 @@ export default function Dashboard() {
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-8">
             {/* Welcome Section */}
-            <div className="bg-gradient-to-r from-[#EECB01] to-[#8E7CE5] rounded-2xl p-6 text-white">
-              <h2 className="text-2xl font-bold mb-2 font-sans">Welcome back, Stellar Explorer! 🚀</h2>
-              <p className="text-white/90 mb-4">
-                You're on a {streak}-day streak! Keep it up to unlock special rewards.
-              </p>
-              <div className="flex items-center space-x-4">
-                <div className="bg-white/20 rounded-lg px-4 py-2">
-                  <div className="text-sm text-white/80">Level</div>
-                  <div className="text-xl font-bold">{level}</div>
+            <Card className="bg-muted/40 border-none">
+              <CardContent className="p-6">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h2 className="text-2xl font-bold mb-2 font-sans text-[#333333]">
+                      Welcome back, {socialMetadata?.name || "Stellar Explorer"}! 🚀
+                    </h2>
+                    <p className="text-gray-600 mb-6">
+                      You're on a {streak}-day streak! Keep it up to unlock special rewards.
+                    </p>
+                  </div>
                 </div>
-                <div className="bg-white/20 rounded-lg px-4 py-2">
-                  <div className="text-sm text-white/80">Total XP</div>
-                  <div className="text-xl font-bold">{xp.toLocaleString()}</div>
+
+                <div className="flex items-center space-x-4">
+                  <div className="bg-white rounded-lg px-4 py-2 border border-gray-100 shadow-sm">
+                    <div className="text-sm text-gray-500">Level</div>
+                    <div className="text-xl font-bold text-[#333333]">{level}</div>
+                  </div>
+                  <div className="bg-white rounded-lg px-4 py-2 border border-gray-100 shadow-sm">
+                    <div className="text-sm text-gray-500">Total XP</div>
+                    <div className="text-xl font-bold text-[#333333]">{xp.toLocaleString()}</div>
+                  </div>
+                  <div className="bg-white rounded-lg px-4 py-2 border border-gray-100 shadow-sm">
+                    <div className="text-sm text-gray-500">Rank</div>
+                    <div className="text-xl font-bold text-[#333333]">#42</div>
+                  </div>
                 </div>
-                <div className="bg-white/20 rounded-lg px-4 py-2">
-                  <div className="text-sm text-white/80">Rank</div>
-                  <div className="text-xl font-bold">#42</div>
-                </div>
-              </div>
-            </div>
+              </CardContent>
+            </Card>
 
             {/* Learning Paths */}
             <div>

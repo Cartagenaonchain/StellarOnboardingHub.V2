@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -25,12 +25,37 @@ import {
   Camera,
 } from "lucide-react"
 import Link from "next/link"
+import { useSessionWallet } from "@/app/StellarWalletProvider"
+import SlimSelect from 'slim-select'
+import 'slim-select/styles'
 
 export default function ProfilePage() {
+  const { socialMetadata } = useSessionWallet();
   const [isEditing, setIsEditing] = useState(false)
-  const [name, setName] = useState("Alex Chen")
-  const [email, setEmail] = useState("alex.chen@example.com")
+
+  // Use real data if available, otherwise fallback
+  const [name, setName] = useState(socialMetadata?.name || "Stellar Explorer")
+  const [email, setEmail] = useState(socialMetadata?.email || "explorer@stellar.org")
   const [bio, setBio] = useState("Passionate about Web3 and blockchain technology. Learning every day!")
+
+  // Update state when socialMetadata loads
+  useEffect(() => {
+    if (socialMetadata?.name) setName(socialMetadata.name);
+    if (socialMetadata?.email) setEmail(socialMetadata.email);
+  }, [socialMetadata]);
+
+  // SlimSelect integration
+  const languageSelectRef = useRef<HTMLSelectElement>(null);
+  useEffect(() => {
+    if (languageSelectRef.current) {
+      new SlimSelect({
+        select: languageSelectRef.current,
+        settings: {
+          showSearch: false,
+        }
+      })
+    }
+  }, []);
 
   const userStats = {
     level: 3,
@@ -89,8 +114,12 @@ export default function ProfilePage() {
             <Card className="border-2 border-[#EECB01]/20 shadow-xl">
               <CardHeader className="text-center pb-4">
                 <div className="relative mx-auto mb-4">
-                  <div className="w-24 h-24 bg-gradient-to-br from-[#EECB01] to-[#8E7CE5] rounded-full flex items-center justify-center">
-                    <User className="w-12 h-12 text-white" />
+                  <div className="w-24 h-24 bg-gradient-to-br from-[#EECB01] to-[#8E7CE5] rounded-full flex items-center justify-center overflow-hidden">
+                    {socialMetadata?.avatar ? (
+                      <img src={socialMetadata.avatar} alt={name} className="w-full h-full object-cover" />
+                    ) : (
+                      <User className="w-12 h-12 text-white" />
+                    )}
                   </div>
                   {isEditing && (
                     <Button
@@ -122,7 +151,7 @@ export default function ProfilePage() {
                   ) : (
                     <div className="flex items-center space-x-2 text-gray-600">
                       <Mail className="w-4 h-4" />
-                      <span>{email}</span>
+                      <span className="break-all">{email}</span>
                     </div>
                   )}
                 </div>
@@ -310,12 +339,15 @@ export default function ProfilePage() {
                       <Globe className="w-5 h-5 text-gray-600" />
                       <div>
                         <div className="font-medium text-[#333333]">Language & Region</div>
-                        <div className="text-sm text-gray-600">English (US)</div>
+                        <div className="text-sm text-gray-600">
+                          <select ref={languageSelectRef} className="w-full">
+                            <option value="en">English (US)</option>
+                            <option value="es">Español</option>
+                            <option value="fr">Français</option>
+                          </select>
+                        </div>
                       </div>
                     </div>
-                    <Button variant="outline" size="sm">
-                      Change
-                    </Button>
                   </div>
                 </div>
               </CardContent>
